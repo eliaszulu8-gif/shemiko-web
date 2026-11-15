@@ -1285,8 +1285,8 @@ function reportData(period, off){
 function reportHTML(D, period){ const PL=periodLabel(period, D.off);
   const P=S.profile||{}, today=TODAY.toLocaleDateString(loc(),{day:'numeric',month:'long',year:'numeric'}), c=sym();
   return `<div class="report" id="reportBody">
-    <div class="rp-head"><div><div class="rp-brand">SHEMIKO · ${t('reportTitle')}</div><h2 style="margin:4px 0 2px">${esc(P.name||t('reportNoName'))}</h2>
-      <div class="muted">${[P.place,P.phone].filter(Boolean).map(esc).join(' · ')||'—'}</div></div>
+    <div class="rp-head"><div><div class="rp-brand">SHEMIKO · ${t('reportTitle')}</div><h2 style="margin:4px 0 2px">${esc(P.farm||P.name||t('reportNoName'))}</h2>
+      <div class="muted">${[P.farm?P.name:'',P.place,P.phone].filter(Boolean).map(esc).join(' · ')||'—'}</div></div>
       <div class="rp-score"><b>${D.sc.total}</b><span>/100<br>${t('score')}</span></div></div>
     <div class="rp-period"><b>${t('rpFor')}: ${esc(PL)}</b></div><div class="muted">${t('reportMade')} ${today} · ${t('amountsIn')} ${c}</div>
     <h3>${t('rpSummary')}</h3>
@@ -1357,8 +1357,8 @@ function reportPDF(D){
     // header band
     P.rect(0,P.H-118,W,118,navy);
     P.text(M,P.H-40,'SHEMIKO · '+t('reportTitle').toUpperCase(),9,true,gold);
-    P.text(M,P.H-66,Pf.name||t('reportNoName'),20,true,[255,255,255]);
-    P.text(M,P.H-86,[Pf.place,Pf.phone].filter(Boolean).join(' · ')||'—',10,false,[217,219,234]);
+    P.text(M,P.H-66,pdfFit(Pf.farm||Pf.name||t('reportNoName'),W-2*M-90,20,true),20,true,[255,255,255]);
+    P.text(M,P.H-86,pdfFit([Pf.farm?Pf.name:'',Pf.place,Pf.phone].filter(Boolean).join(' · ')||'—',W-2*M-90,10),10,false,[217,219,234]);
     P.text(W-M,P.H-62,String(D.sc.total),26,true,gold,'right');
     P.text(W-M,P.H-80,'/100 '+t('score'),9,false,[217,219,234],'right');
     P.y=P.H-148;
@@ -1398,7 +1398,7 @@ function reportPDF(D){
 }
 function reportCSV(D){
   const Pf=S.profile||{}, q=v=>{ v=v==null?'':String(v); return /[",\n;]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }, L=[], row=(...a)=>L.push(a.map(q).join(','));
-  row('Shemiko',t('reportTitle')); row(t('rpName'),Pf.name||''); row(t('rpPlace'),Pf.place||''); row(t('rpPhone'),Pf.phone||'');
+  row('Shemiko',t('reportTitle')); row(t('farmName'),Pf.farm||''); row(t('rpName'),Pf.name||''); row(t('rpPlace'),Pf.place||''); row(t('rpPhone'),Pf.phone||'');
   const R=periodRange(D.period,D.off); row(t('rpFor'),periodLabel(D.period,D.off),R?R.from:'',R?R.to:''); row(t('reportMade'),iso(TODAY)); row(t('amountsIn'),curCode());
   row(); row(t('rpSummary')); row(t('moneyIn'),moneyN(D.all.r)); row(t('spent'),moneyN(D.all.c)); row(t('rpProfit'),moneyN(D.all.net));
   row(t('rpRecords'),D.nrec); row(t('score'),D.sc.total); row(t('rpAssets'),moneyN(D.animals+D.equip));
@@ -1424,7 +1424,7 @@ async function saveFile(name, mime, data){
 function reportText(D, period){
   const P=S.profile||{}, c=sym(), L=[];
   L.push(`SHEMIKO ${t('reportTitle').toUpperCase()}`);
-  L.push(`${P.name||t('reportNoName')}${P.place?' · '+P.place:''}${P.phone?' · '+P.phone:''}`);
+  L.push([P.farm, P.name||(P.farm?'':t('reportNoName')), P.place, P.phone].filter(Boolean).join(' · '));
   L.push(`${t('rpFor')}: ${periodLabel(period, D.off)} · ${t('reportMade')} ${TODAY.toLocaleDateString(loc())} · ${c}`);
   L.push(''); L.push(`${t('moneyIn')}: ${fmt(D.all.r)}  ${t('spent')}: ${fmt(D.all.c)}  ${t('rpProfit')}: ${signed(D.all.net)}`);
   L.push(`${t('score')}: ${D.sc.total}/100 · ${D.short?t('rpDays')+': '+D.days+'/'+D.spanDays:t('rpMonths')+': '+D.months} · ${t('rpRecords')}: ${D.nrec}`);
@@ -2222,6 +2222,7 @@ function sheet(kind, pre){
     let period='month', off=0;
     const P=S.profile||{};
     const el=openSheet(`<h2>${t('reportTitle')}</h2><div class="muted">${t('reportIntro')}</div>
+      <div class="field"><label for="rp-farm">${t('farmName')}</label><input id="rp-farm" maxlength="40" value="${esc(P.farm||'')}" placeholder="${esc(t('farmNamePh'))}"></div>
       <div class="two"><div class="field"><label for="rp-name">${t('rpName')}</label><input id="rp-name" value="${esc(P.name||'')}" placeholder="${esc(t('rpNamePh'))}"></div>
       <div class="field"><label for="rp-phone">${t('rpPhone')}</label><input id="rp-phone" value="${esc(P.phone||'')}" inputmode="tel"></div></div>
       <div class="field"><label for="rp-place">${t('rpPlace')}</label><input id="rp-place" value="${esc(P.place||'')}" placeholder="${esc(t('rpPlacePh'))}"></div>
@@ -2232,9 +2233,9 @@ function sheet(kind, pre){
       <div class="two"><button class="btn line" id="rp-share">${t('rpShare')}</button><button class="btn line" id="rp-print">${t('rpPrint')}</button></div>
       <button type="button" class="btn ghost" data-close>${t('close')}</button>`);
     const q=x=>el.querySelector(x);
-    const draw=()=>{ S.profile={name:q('#rp-name').value.trim(),place:q('#rp-place').value.trim(),phone:q('#rp-phone').value.trim()}; save(); q('#rp-out').innerHTML=reportHTML(reportData(period,off),period); q('#rp-nav').hidden = period==='all'; q('#rp-lbl').textContent=periodLabel(period,off); q('#rp-next').disabled = off>=0; };
+    const draw=()=>{ S.profile={...(S.profile||{}), farm:q('#rp-farm').value.trim(), name:q('#rp-name').value.trim(),place:q('#rp-place').value.trim(),phone:q('#rp-phone').value.trim()}; save(); q('#rp-out').innerHTML=reportHTML(reportData(period,off),period); q('#rp-nav').hidden = period==='all'; q('#rp-lbl').textContent=periodLabel(period,off); q('#rp-next').disabled = off>=0; };
     q('#rp-prev').onclick=()=>{ off--; draw(); }; q('#rp-next').onclick=()=>{ if(off<0){ off++; draw(); } };
-    ['#rp-name','#rp-place','#rp-phone'].forEach(x=>q(x).oninput=draw);
+    ['#rp-farm','#rp-name','#rp-place','#rp-phone'].forEach(x=>q(x).oninput=draw);
     el.querySelectorAll('#rp-period button').forEach(b=>b.onclick=()=>{ period=b.dataset.p; off=0; el.querySelectorAll('#rp-period button').forEach(x=>x.classList.toggle('on',x===b)); draw(); });
     draw();
     if(NATIVE) q('#rp-print').hidden=true;
