@@ -1,5 +1,5 @@
 // Shemiko offline support: keeps the app working with no internet.
-const CACHE = 'shemiko-v20';
+const CACHE = 'shemiko-v21';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', event => {
