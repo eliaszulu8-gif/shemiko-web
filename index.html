@@ -1704,8 +1704,9 @@ const LAUNCH_YEAR = 2027; // "year one" of sales: longer free trials for people 
 const LIC_PUB = {"kty": "EC", "crv": "P-256", "x": "ZgkAyLouwWiiAaMZ6KVv0f_6RjQ0m5P8wfIeoSvxDFo", "y": "YSfIpC8QpBe2Lff5wocR-AKJJYcaZ_PWh09IxE0Q1hg", "ext": true, "key_ops": ["verify"]};
 const MARK_SVG = "<svg class=\"mark\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><g transform=\"translate(0.0 0.0) scale(1.0)\"><defs><clipPath id=\"s\"><path d=\"M256 64 C 150 96 112 180 160 240 C 196 284 300 252 324 300 C 344 340 300 400 200 440 C 330 440 420 360 384 282 C 356 222 250 250 220 206 C 196 170 214 112 256 64 Z\"/></clipPath></defs><g clip-path=\"url(#s)\">\n<rect width=\"512\" height=\"512\" fill=\"#E2A93A\"/>\n<path d=\"M100 110 L256 70 L412 110\" fill=\"none\" stroke=\"#F4EFE3\" stroke-width=\"14\"/><path d=\"M100 148 L256 108 L412 148\" fill=\"none\" stroke=\"#B5532E\" stroke-width=\"14\"/><path d=\"M100 186 L256 146 L412 186\" fill=\"none\" stroke=\"#F4EFE3\" stroke-width=\"14\"/><path d=\"M100 224 L256 184 L412 224\" fill=\"none\" stroke=\"#B5532E\" stroke-width=\"14\"/><path d=\"M100 262 L256 222 L412 262\" fill=\"none\" stroke=\"#F4EFE3\" stroke-width=\"14\"/><path d=\"M100 300 L256 260 L412 300\" fill=\"none\" stroke=\"#B5532E\" stroke-width=\"14\"/><path d=\"M100 338 L256 298 L412 338\" fill=\"none\" stroke=\"#F4EFE3\" stroke-width=\"14\"/><path d=\"M100 376 L256 336 L412 376\" fill=\"none\" stroke=\"#B5532E\" stroke-width=\"14\"/><path d=\"M100 414 L256 374 L412 414\" fill=\"none\" stroke=\"#F4EFE3\" stroke-width=\"14\"/><path d=\"M100 452 L256 412 L412 452\" fill=\"none\" stroke=\"#B5532E\" stroke-width=\"14\"/>\n</g><path d=\"M256 64 C 150 96 112 180 160 240 C 196 284 300 252 324 300 C 344 340 300 400 200 440 C 330 440 420 360 384 282 C 356 222 250 250 220 206 C 196 170 214 112 256 64 Z\" fill=\"none\" stroke=\"#F4EFE3\" stroke-width=\"6\"/></g></svg>";
 const PLANS = ['plus','pro','business'];
-const PRICE = { phone:{plus:'K25',pro:'K60',business:'K100'}, pc:{plus:'$7',pro:'$10',business:'$20'} };
-const PRICE_N = { phone:{plus:25,pro:60,business:100}, pc:{plus:7,pro:10,business:20} };
+const PRICE = { phone:{plus:'$7',pro:'$10',business:'$20'}, pc:{plus:'$25',pro:'$60',business:'$100'} };
+const PRICE_N = { phone:{plus:7,pro:10,business:20}, pc:{plus:25,pro:60,business:100} };
+const kwachaOf = usd => { try{ const r=kPer('USD'); return r>0 ? ' (≈ K'+num(Math.round(usd*r))+')' : ''; }catch(e){ return ''; } };
 const PLAN_RANK = { basic:0, plus:1, pro:2, business:3, trial:3 };
 const planName = p => p==='trial'?t('plTrial'):p==='basic'?t('plBasic'):p==='plus'?'Plus':p==='pro'?'Pro':'Business';
 const devClass = () => NATIVE ? 'phone' : (window.matchMedia && window.matchMedia('(pointer:coarse)').matches ? 'phone' : 'pc');
@@ -1840,8 +1841,8 @@ function accountSheet(kind, pre){
       <button type="button" class="btn" id="py-key">${t('acKey')}</button>
       <button type="button" class="btn ghost" data-close>${t('close')}</button></div>`);
     const q=x=>el.querySelector(x);
-    const upd=()=>{ months=+q('#py-m').value; const n=PRICE_N[dev][plan]*months, cur=dev==='pc'?'$':'K';
-      q('#py-total').innerHTML=`${t('pyTotal')}: <b>${cur}${num(n)}</b>`; const ref=(acctId()||t('pyYourPhone'))+' '+plan.toUpperCase()+' '+months+'M'; q('#py-ref').textContent=ref;
+    const upd=()=>{ months=+q('#py-m').value; const n=PRICE_N[dev][plan]*months, cur='$';
+      q('#py-total').innerHTML=`${t('pyTotal')}: <b>${cur}${num(n)}</b><span class="muted">${kwachaOf(n)}</span>`; const ref=(acctId()||t('pyYourPhone'))+' '+plan.toUpperCase()+' '+months+'M'; q('#py-ref').textContent=ref;
       q('#py-wa').href='https://wa.me/260969928620?text='+encodeURIComponent(`Shemiko ${planName(plan)} (${dev==='pc'?'computer':'phone'}), ${months} month(s), ${cur}${n}. Ref: ${ref}. Proof of payment attached.`); };
     q('#py-m').onchange=upd; upd();
     el.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{ if(!serverOn()){ q('#py-msg').textContent=t('pySoon'); q('#py-msg').classList.add('pl-need'); return; } toast(t('pySoon')); });
