@@ -2752,6 +2752,14 @@ if(NATIVE && NATIVE.App){ NATIVE.App.addListener('backButton', ()=>{
 }); }
 if(WIDE.matches) tab='home';
 setTimeout(()=>{ loadLicence(); if(!S.account && !S.skipLogin) sheet('login'); }, 0);
+// Anonymous visit counter: one small note per device per day (date, phone/computer, language, sections used). No names, records or places.
+const APP_V='0.15.4';
+async function countVisit(){ try{ if(!serverOn() || !navigator.onLine) return; const today=new Date().toISOString().slice(0,10); let st={}; try{ st=JSON.parse(localStorage.getItem('shm_visit')||'{}'); }catch(e){}
+    if(st.day===today) return; if(!st.dev){ const a=new Uint8Array(12); crypto.getRandomValues(a); st.dev='d'+[...a].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+    const secs = S.example ? ['example'] : [...new Set((S.records||[]).map(r=>{ try{ return entOf(r); }catch(e){ return null; } }).filter(Boolean))].slice(0,8);
+    const r=await fetch(SERVER.url+'/rest/v1/visits',{method:'POST',headers:{'Content-Type':'application/json',apikey:SERVER.anonKey,Prefer:'return=minimal'},body:JSON.stringify({device:st.dev,kind:devClass(),lang:String(S.lang||'en').slice(0,8),sections:secs,signed_in:!!S.account,version:APP_V})});
+    if(r.ok || r.status===409){ st.day=today; localStorage.setItem('shm_visit',JSON.stringify(st)); } else localStorage.setItem('shm_visit',JSON.stringify({dev:st.dev})); }catch(e){} }
+setTimeout(countVisit, 4000); window.addEventListener('online', ()=>setTimeout(countVisit,2000));
 render();
 })();
 </script>
