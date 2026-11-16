@@ -346,7 +346,9 @@ a.btn{text-align:center;text-decoration:none;display:block}
 
 <script>
 (() => {
-const TODAY = new Date('2026-10-17T12:00:00');
+const DEMO_DAY = new Date('2026-10-17T12:00:00'); // the example farm was written for this day
+const TODAY = (()=>{ const d=new Date(); d.setHours(12,0,0,0); return d; })();
+let DATE_BASE = TODAY;
 const CROPS = {
   maize:{days:120,yield:2.5,price:6,en:'Maize',fr:'Maïs',code:'MAI'},
   soybean:{days:110,yield:1.4,price:12,en:'Soybean',fr:'Soja',code:'SOY'},
@@ -572,10 +574,18 @@ const T = {
 };
 
 const iso = d => d.toISOString().slice(0,10);
-const addDays = (n, from=TODAY) => { const d = new Date(from); d.setDate(d.getDate()+n); return iso(d); };
+const addDays = (n, from=DATE_BASE) => { const d = new Date(from); d.setDate(d.getDate()+n); return iso(d); };
+// Example data is written for DEMO_DAY, then every date in it is moved forward so the example farm always looks current.
+const DEMO_SHIFT = Math.round((TODAY - DEMO_DAY)/86400000);
+function shiftDates(o, n, skip){ if(!n) return o; const re=/^\d{4}-\d{2}-\d{2}$/;
+  const walk=v=>{ if(typeof v==='string') return re.test(v)?addDays(n,new Date(v+'T12:00:00')):v; if(Array.isArray(v)) return v.map(walk);
+    if(v && typeof v==='object'){ for(const k of Object.keys(v)) if(!(skip&&skip.includes(k))) v[k]=walk(v[k]); } return v; };
+  return walk(o); }
+function withDemoDates(fn){ DATE_BASE=DEMO_DAY; let out; try{ out=fn(); } finally{ DATE_BASE=TODAY; } return shiftDates(out, DEMO_SHIFT); }
 let uid = Date.now()%100000; const id = () => 'x'+(uid++).toString(36);
 
-function sampleCoop(){
+function sampleCoop(){ return withDemoDates(sampleCoop0); }
+function sampleCoop0(){
   const m=(id,name,village,phone,crops,birds,score,last,loan)=>({id,name,village,phone,crops,birds,score,last:addDays(-last),loan});
   return { name:'Masaiti Farmers Cooperative', district:'Masaiti, Copperbelt', members:[
     m('m1','Grace Mulenga','Kashitu','0977 100 201',[{crop:'maize',ha:2},{crop:'soybean',ha:1}],{broiler:0,layer:50},84,1,{principal:9000,repaid:6000,due:'2027-06-30'}),
@@ -608,7 +618,8 @@ function samplePondLogs(){
   const out=[]; for(let d=0; d<=84; d+=7) out.push({date:addDays(d,new Date('2026-07-20T12:00:00')),feed:Math.round(4+d*0.12),deaths:d===0?18:d<=14?4:1});
   return out;
 }
-function sample(lang){
+function sample(lang){ return withDemoDates(()=>sample0(lang)); }
+function sample0(lang){
   return { lang, example:true, lastBackup:null, currency:'ZMW',
     plots:[
       {id:'p1',name:'Main field',crop:'maize',ha:2,planted:'2026-11-25'},
@@ -711,7 +722,7 @@ function sample(lang){
       {id:'e3',name:'Pair of oxen',type:'oxen',ent:'crop',bought:'2023-06-01',cost:14000,every:180,lastService:'2026-03-15',logs:[{date:'2026-03-15',kind:'service',amount:200,note:'Dipping and deworming'}]},
       {id:'e4',name:'Feeders and drinkers',type:'poultry',ent:'poultry',bought:'2026-09-28',cost:800,every:30,lastService:'2026-10-01',logs:[]}
     ],
-    coop:sampleCoop(),
+    coop:sampleCoop0(),
     runs:[
       {id:'c1',tpl:'prePlanting',ent:'crop',date:'2026-10-10',checked:[0,1,2]},
       {id:'c2',tpl:'layerWeek',ent:'poultry',date:'2026-10-15',checked:[0,1]},
@@ -738,6 +749,14 @@ const KEY='shemiko-ledger-v8';
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
 if(!S || !S.plots) S = sample('en');
+else {
+  // Up to version 0.16.0 the app's "today" was always 17 Oct 2026.
+  if(S.example){ const from=S.exDay||'2026-10-17', n=Math.round((TODAY-new Date(from+'T12:00:00'))/86400000);
+    if(n) shiftDates(S, n, ['account','licence','trial','cloudAt','cloudSkip','profile']); }
+  if(S.trial) for(const k of Object.keys(S.trial)) if(S.trial[k]==='2026-10-17') S.trial[k]=iso(TODAY);
+}
+if(S.example && S.exDay!==iso(TODAY)){ S.exDay=iso(TODAY); try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+if(S.trial && Object.values(S.trial).includes(iso(TODAY))) try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
 if(S.example && !S.stock){ S.stock=sample(S.lang).stock; }
 if(S.example && !S.profile) S.profile={name:'Mary Banda (example)',place:'Masaiti, Copperbelt Province',phone:''};
 if(S.example && S.herds && !S.animalsSeeded){ const X=sample(S.lang); S.herds.forEach(h=>{ const x=X.herds.find(y=>y.id===h.id); if(x && !h.animals) h.animals=x.animals; }); S.animalsSeeded=true; }
@@ -2803,7 +2822,7 @@ if(NATIVE && NATIVE.App){ NATIVE.App.addListener('backButton', ()=>{
 if(WIDE.matches) tab='home';
 setTimeout(()=>{ loadLicence(); if(!S.account && !S.skipLogin) sheet('login'); else if(S.account) setTimeout(()=>{ cloudCheck(false); cloudBackup(false); }, 2500); }, 0);
 // Anonymous visit counter: one small note per device per day (date, phone/computer, language, sections used). No names, records or places.
-const APP_V='0.16.0';
+const APP_V='0.16.1';
 async function countVisit(){ try{ if(!serverOn() || !navigator.onLine) return; const today=new Date().toISOString().slice(0,10); let st={}; try{ st=JSON.parse(localStorage.getItem('shm_visit')||'{}'); }catch(e){}
     if(st.day===today) return; if(!st.dev){ const a=new Uint8Array(12); crypto.getRandomValues(a); st.dev='d'+[...a].map(x=>x.toString(16).padStart(2,'0')).join(''); }
     const secs = S.example ? ['example'] : [...new Set((S.records||[]).map(r=>{ try{ return entOf(r); }catch(e){ return null; } }).filter(Boolean))].slice(0,8);
