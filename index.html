@@ -52,8 +52,8 @@ h2{font-size:1.15rem;font-weight:700}
 .iconbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;font:700 .78rem var(--body);padding:5px 11px;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
 .iconbtn svg{width:14px;height:14px}
 header.top{display:flex;flex-direction:column;gap:2px}
-.demo{font-size:.8rem;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.demo button{background:none;border:0;color:var(--indigo);font:inherit;font-weight:700;padding:0;cursor:pointer;text-decoration:underline}
+.demo{font-size:.9rem;color:var(--ink);display:flex;flex-direction:column;gap:10px;align-items:stretch;background:rgba(226,169,58,.14);border:1px solid rgba(226,169,58,.55);border-radius:14px;padding:12px 14px;margin:6px 0 4px}
+.demo button{background:#1B2350;border:0;color:#fff;font:inherit;font-size:1.05rem;font-weight:700;min-height:50px;padding:12px 16px;border-radius:12px;cursor:pointer;width:100%}.demo button:active{transform:scale(.98)}[data-theme=dark] .demo button{background:#E2A93A;color:#1B2350}.demo button.armed,[data-theme=dark] .demo button.armed{background:#B5532E;color:#fff}
 
 .net{background:var(--indigo);color:var(--on-indigo);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px}
 .net .big{font-family:var(--display);font-size:2.3rem;font-weight:800;line-height:1}
@@ -949,7 +949,7 @@ function header(title){
       <button data-mode="coop" class="${isC()?'on':''}" aria-pressed="${isC()}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3 3-5 6-5s6 2 6 5M10 20c0-3 3-5 6-5s6 2 6 5"/></svg>${(S.lang==='fr'?'Coop':t('coopTab'))}</button>
     </div>
     <header class="top"><div class="eyebrow">${S.example?t('farm'):esc((S.profile&&S.profile.farm)||t('myFarm'))}</div><h1>${title}</h1></header>
-    ${S.example?`<div class="demo">${t('example')} <button id="clear">${t('startOwn')}</button></div>`:''}`;
+    ${S.example?`<div class="demo">${t('example')} <button id="clear">＋ ${t('startOwn')}</button></div>`:''}`;
 }
 const sayBox = () => `<section><div class="say"><input id="say" placeholder="${esc(t('sayPh'))}" autocomplete="off" aria-label="${esc(t('sayPh'))}">
   <button class="mic" id="mic" aria-label="Voice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
@@ -2734,7 +2734,7 @@ document.addEventListener('click', e=>{
   else if(b.id==='curBtn') sheet('currency');
   else if(b.id==='mic') startVoice();
   else if(b.id==='clear'){
-    if(!armed){ armed=true; b.textContent=t('confirmClear'); setTimeout(()=>{armed=false; render();},4000); return; }
+    if(!armed){ armed=true; b.textContent=t('confirmClear'); b.classList.add('armed'); setTimeout(()=>{armed=false; render();},4000); return; }
     armed=false; S={lang:S.lang,currency:S.currency,mode:S.mode,customCrops:S.customCrops||[],customBirds:S.customBirds||[],prices:S.prices||{},cropPrices:S.cropPrices||{},profile:(S.profile&&!/\(example\)/.test(S.profile.name||'')?S.profile:{}),account:S.account||null,licence:S.licence||null,trial:S.trial||{},skipLogin:S.skipLogin||false,theme:S.theme,rates:S.rates,stock:[],fishPrices:S.fishPrices||{},ponds:[],budgetF:{},fruitPrices:S.fruitPrices||{},orchards:[],livePrices:S.livePrices||{},herds:[],budgetL:{},typeSeq:S.typeSeq||0,plots:[],flocks:[],records:[],tasks:[],loans:[],workers:[],work:[],equipment:[],runs:[],customTpls:[],budget:{},budgetP:{},example:false,lastBackup:null}; save(); tab='plots'; render(); toast(t('cleared')); sheet('farm');
   }
 });
@@ -2753,7 +2753,7 @@ if(NATIVE && NATIVE.App){ NATIVE.App.addListener('backButton', ()=>{
 if(WIDE.matches) tab='home';
 setTimeout(()=>{ loadLicence(); if(!S.account && !S.skipLogin) sheet('login'); }, 0);
 // Anonymous visit counter: one small note per device per day (date, phone/computer, language, sections used). No names, records or places.
-const APP_V='0.15.4';
+const APP_V='0.15.5';
 async function countVisit(){ try{ if(!serverOn() || !navigator.onLine) return; const today=new Date().toISOString().slice(0,10); let st={}; try{ st=JSON.parse(localStorage.getItem('shm_visit')||'{}'); }catch(e){}
     if(st.day===today) return; if(!st.dev){ const a=new Uint8Array(12); crypto.getRandomValues(a); st.dev='d'+[...a].map(x=>x.toString(16).padStart(2,'0')).join(''); }
     const secs = S.example ? ['example'] : [...new Set((S.records||[]).map(r=>{ try{ return entOf(r); }catch(e){ return null; } }).filter(Boolean))].slice(0,8);
